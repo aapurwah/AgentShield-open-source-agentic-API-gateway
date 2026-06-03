@@ -1,0 +1,13 @@
+apiVersion: v2
+name: agentshield
+description: Agentic API Gateway — Intent-based rate limiting proxy with monitoring dashboard
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - api-gateway
+  - rate-limiting
+  - reverse-proxy
+  - ai-agents
+maintainers:
+  - name: AgentShield Team

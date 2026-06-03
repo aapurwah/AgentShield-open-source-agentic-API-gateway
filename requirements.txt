@@ -1,0 +1,40 @@
+AgentShield Requirements and Run Commands
+
+Prerequisites:
+- Docker Desktop with Docker Compose
+- Node.js 20.x
+- npm
+- Go 1.22+ (optional for local Go build; Docker Compose builds the proxy automatically)
+
+Install dependencies (optional, if you want to run services locally without rebuilding every time):
+1. cd dashboard
+2. npm install
+3. cd ../mock-backend
+4. npm install
+5. cd ../proxy
+6. go mod download
+
+Start the project with Docker Compose:
+
+From the repo root folder:
+1. Set-Location 'C:\Users\HP\Downloads\agentshield\agentshield'
+2. docker compose up --build
+
+If you are running from one folder above the repo root:
+- docker compose -f .\agentshield\docker-compose.yml up --build
+
+PowerShell one-liner that worked:
+- powershell -NoProfile -Command "& {Set-Location 'C:\Users\HP\Downloads\agentshield\agentshield'; docker compose up --build -d}"
+
+Stop the project:
+- docker compose down
+
+
+Verify the services:
+- Dashboard: http://localhost:3000
+- Mock backend: http://localhost:3001
+- Proxy: http://localhost:8080
+- Redis: localhost:6379
+
+Health check:
+- curl http://localhost:8080/health

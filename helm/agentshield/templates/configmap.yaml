@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentshield.fullname" . }}-proxy-config
+  labels:
+    {{- include "agentshield.labels" . | nindent 4 }}
+    app.kubernetes.io/component: proxy
+data:
+  LISTEN_ADDR: {{ .Values.proxy.env.listenAddr | quote }}
+  BACKEND_URL: {{ .Values.proxy.env.backendUrl | quote }}
+  {{- if .Values.redis.enabled }}
+  REDIS_ADDR: "{{ include "agentshield.fullname" . }}-redis:6379"
+  {{- else }}
+  REDIS_ADDR: {{ printf "%s:6379" .Values.redis.externalHost | quote }}
+  {{- end }}
+  NORMAL_LIMIT: {{ .Values.proxy.env.normalLimit | quote }}
+  BURST_PER_GOAL: {{ .Values.proxy.env.burstPerGoal | quote }}
+  LIMIT_WINDOW_SEC: {{ .Values.proxy.env.limitWindowSec | quote }}
+  COALESCE_WINDOW_MS: {{ .Values.proxy.env.coalesceWindowMs | quote }}
+  LOOP_THRESHOLD: {{ .Values.proxy.env.loopThreshold | quote }}
+  LOOP_WINDOW_SEC: {{ .Values.proxy.env.loopWindowSec | quote }}

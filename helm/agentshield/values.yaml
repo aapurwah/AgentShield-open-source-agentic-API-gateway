@@ -1,0 +1,69 @@
+proxy:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/agentshield/proxy
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    listenAddr: ":8080"
+    backendUrl: "http://mock-backend:3001"
+    normalLimit: "100"
+    burstPerGoal: "1000"
+    limitWindowSec: "60"
+    coalesceWindowMs: "100"
+    loopThreshold: "20"
+    loopWindowSec: "5"
+
+dashboard:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/agentshield/dashboard
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7-alpine
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  externalHost: ""
+  externalPassword: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: agentshield.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: proxy
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
