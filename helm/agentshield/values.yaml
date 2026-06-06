@@ -1,7 +1,7 @@
 proxy:
   replicaCount: 2
   image:
-    repository: ghcr.io/agentshield/proxy
+    repository: ghcr.io/aapurwah/agentshield-proxy
     tag: latest
     pullPolicy: IfNotPresent
   resources:
@@ -24,7 +24,7 @@ proxy:
 dashboard:
   replicaCount: 1
   image:
-    repository: ghcr.io/agentshield/dashboard
+    repository: ghcr.io/aapurwah/agentshield-dashboard
     tag: latest
     pullPolicy: IfNotPresent
   resources:
@@ -50,6 +50,21 @@ redis:
   externalHost: ""
   externalPassword: ""
 
+mockBackend:
+  enabled: true
+  port: 3001
+  image:
+    repository: ghcr.io/aapurwah/agentshield-mock-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
 ingress:
   enabled: true
   className: nginx
@@ -61,6 +76,9 @@ ingress:
         - path: /
           pathType: Prefix
           service: proxy
+        - path: /dashboard
+          pathType: Prefix
+          service: dashboard
 
 hpa:
   enabled: true

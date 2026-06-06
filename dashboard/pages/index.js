@@ -4,6 +4,7 @@ import MetricCard from "../components/MetricCard";
 import TrafficFeed from "../components/TrafficFeed";
 import GoalList from "../components/GoalList";
 import LoopDetectorCard from "../components/LoopDetectorCard";
+import AgentVisualizer from "../components/AgentVisualizer";
 import useAgentData from "../lib/useAgentData";
 
 function formatCompact(n) {
@@ -68,7 +69,10 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column — Live Traffic Feed */}
           <div className="lg:col-span-2 min-h-0">
-            <TrafficFeed traffic={traffic} />
+            <div className="space-y-6">
+              <AgentVisualizer metrics={metrics} traffic={traffic} />
+              <TrafficFeed traffic={traffic} />
+            </div>
           </div>
 
           {/* Right Column — Goals + Loop Detection */}

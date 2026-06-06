@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentshield.fullname" . }}-mock-backend
+  labels:
+    {{- include "agentshield.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mock-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "agentshield.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mock-backend
+  template:
+    metadata:
+      labels:
+        {{- include "agentshield.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mock-backend
+    spec:
+      containers:
+        - name: mock-backend
+          image: "{{ .Values.mockBackend.image.repository }}:{{ .Values.mockBackend.image.tag }}"
+          imagePullPolicy: {{ .Values.mockBackend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mockBackend.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "{{ .Values.mockBackend.port }}"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.mockBackend.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.mockBackend.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.mockBackend.resources | nindent 12 }}

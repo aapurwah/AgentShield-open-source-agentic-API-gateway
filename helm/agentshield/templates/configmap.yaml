@@ -7,7 +7,11 @@ metadata:
     app.kubernetes.io/component: proxy
 data:
   LISTEN_ADDR: {{ .Values.proxy.env.listenAddr | quote }}
+  {{- if .Values.mockBackend.enabled }}
+  BACKEND_URL: "http://{{ include "agentshield.fullname" . }}-mock-backend:{{ .Values.mockBackend.port }}"
+  {{- else }}
   BACKEND_URL: {{ .Values.proxy.env.backendUrl | quote }}
+  {{- end }}
   {{- if .Values.redis.enabled }}
   REDIS_ADDR: "{{ include "agentshield.fullname" . }}-redis:6379"
   {{- else }}

@@ -1,6 +1,10 @@
 # AgentShield — Agentic API Gateway (MVP)
 
+![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)
+
 An intent-based API gateway that solves the "AI agent looks like a DDoS" problem. Instead of rate-limiting by IP or API key, AgentShield limits by **Goal ID**, enabling agentic fan-out while protecting backend APIs.
+
+**Project pitch:** AgentShield is a proof-of-concept gateway for AI agents that preserves high-volume request throughput while preventing abuse. It combines goal-aware burst control, task-level loop detection, request coalescing, and a real-time dashboard driven by backend event streaming.
 
 ## Architecture
 
@@ -77,6 +81,20 @@ npm run dev
 
 The dashboard polls every 2 seconds, counting up metrics, pushing new traffic rows, and occasionally simulating 429/418 spikes. System status toggles to "Under Attack" when blocked count crosses 3,000.
 
+### Live Events (SSE)
+
+The `mock-backend` exposes a Server-Sent Events (SSE) stream at `http://localhost:3001/events`. When running the full stack with Docker Compose the dashboard will attempt to connect to this stream and display real-time request events in the visualizer.
+
+If you run services separately, ensure the mock-backend is reachable at port `3001` from your browser (CORS is enabled for the SSE endpoint).
+
+Example: open the dashboard at `http://localhost:3000` and the visualizer will receive live request events emitted by the backend.
+
+## Demo assets and slides
+
+- `docs/presentation.md` — short slide deck outline for your pitch.
+- `docs/demo-plan.md` — demo recording plan and local execution steps.
+- `docs/README.md` — docs index for presentation and demo assets.
+
 ### Option 2: Kubernetes via Helm (enterprise deployment)
 
 **Prerequisites:** Kubernetes cluster with NGINX Ingress Controller and Helm 3 installed. Docker images pushed to a container registry (`ghcr.io/agentshield/proxy`, `ghcr.io/agentshield/dashboard`).
@@ -97,6 +115,7 @@ helm install agentshield ./helm/agentshield \
   --set proxy.replicaCount=3 \
   --set proxy.image.repository=registry.example.com/agentshield-proxy \
   --set dashboard.image.repository=registry.example.com/agentshield-dashboard \
+  --set mockBackend.image.repository=registry.example.com/agentshield-mock-backend \
   --set redis.enabled=false \
   --set redis.externalHost=redis-ha.internal \
   --set redis.externalPassword=supersecret \

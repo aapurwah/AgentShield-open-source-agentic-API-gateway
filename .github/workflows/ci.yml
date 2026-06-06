@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dashboard dependencies
+        run: |
+          cd dashboard
+          npm ci
+
+      - name: Build dashboard
+        run: |
+          cd dashboard
+          npm run build
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22
+
+      - name: Verify Go proxy build
+        run: |
+          cd proxy
+          go test ./...
+
+      - name: Build and start Docker Compose stack
+        run: |
+          docker compose -f docker-compose.yml up -d --build
+
+      - name: Wait for services to become healthy
+        run: |
+          echo "Waiting for services..."
+          sleep 20
+
+      - name: Run integration tests
+        run: |
+          bash ./test.sh
+
+      - name: Tear down Docker Compose stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.yml down

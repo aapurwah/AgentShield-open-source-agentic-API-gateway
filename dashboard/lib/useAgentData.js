@@ -150,7 +150,68 @@ export default function useAgentData() {
     }
     updateTick();
     const interval = setInterval(updateTick, 2000);
-    return () => clearInterval(interval);
+
+    // Try to connect to mock-backend SSE stream for real events
+    let es;
+    try {
+      if (typeof window !== "undefined") {
+        const proto = window.location.protocol;
+        const host = window.location.hostname;
+        const url = `${proto}//${host}:3001/events`;
+        es = new EventSource(url);
+        es.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.type === "request") {
+              const entry = {
+                id: `sse-${msg.timestamp}-${Math.floor(Math.random()*10000)}`,
+                timestamp: msg.timestamp.replace("T", " ").slice(0, 19),
+                status: msg.status || 200,
+                goalId: msg.goalId || null,
+                taskId: msg.taskId || null,
+                method: msg.method || "GET",
+                endpoint: msg.path || msg.endpoint || "/",
+                source: "sse",
+              };
+
+              setTraffic((prev) => [entry, ...prev].slice(0, 50));
+
+              setMetrics((prev) => {
+                const pushSparkline = (arr, val) => [...arr.slice(1), val];
+                const newReq = 1;
+                const newBurst = msg.goalId ? 1 : 0;
+                const newDdos = entry.status >= 400 ? 1 : 0;
+                const newCompute = 0;
+                const updatedDdos = prev.ddosBlocked + newDdos;
+                setSystemStatus(updatedDdos > 3000 ? "under_attack" : "normal");
+
+                return {
+                  totalRequests: prev.totalRequests + newReq,
+                  burstsAllowed: prev.burstsAllowed + newBurst,
+                  ddosBlocked: updatedDdos,
+                  computeSaved: prev.computeSaved + newCompute,
+                  sparklineData: {
+                    requests: pushSparkline(prev.sparklineData.requests, newReq * 8),
+                    bursts: pushSparkline(prev.sparklineData.bursts, newBurst * 12),
+                    ddos: pushSparkline(prev.sparklineData.ddos, newDdos * 15),
+                    compute: pushSparkline(prev.sparklineData.compute, newCompute * 10),
+                  },
+                };
+              });
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        };
+      }
+    } catch (e) {
+      // ignore EventSource failures
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (es) es.close();
+    };
   }, [hydrated, updateTick]);
 
   return { metrics, traffic, goals, loops, systemStatus };

@@ -1,0 +1,80 @@
+name: CI Build, Push, and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_TAG: ${{ github.sha }}
+      OWNER: ${{ github.repository_owner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push proxy image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./proxy
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-proxy:${{ env.IMAGE_TAG }}
+
+      - name: Build and push dashboard image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./dashboard
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-dashboard:${{ env.IMAGE_TAG }}
+
+      - name: Build and push mock-backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./mock-backend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-mock-backend:${{ env.IMAGE_TAG }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Configure kubeconfig
+        if: secrets.KUBE_CONFIG != ''
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
+          mkdir -p $HOME/.kube
+          mv kubeconfig $HOME/.kube/config
+
+      - name: Helm upgrade/install
+        run: |
+          helm upgrade --install agentshield helm/agentshield \
+            --namespace agentshield --create-namespace \
+            --set proxy.image.repository=${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-proxy \
+            --set proxy.image.tag=${{ env.IMAGE_TAG }} \
+            --set dashboard.image.repository=${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-dashboard \
+            --set dashboard.image.tag=${{ env.IMAGE_TAG }} \
+            --set mock-backend.image.repository=${{ env.REGISTRY }}/${{ env.OWNER }}/agentshield-mock-backend \
+            --set mock-backend.image.tag=${{ env.IMAGE_TAG }}
